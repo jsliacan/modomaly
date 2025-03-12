@@ -1,2 +1,2 @@
 # modomaly
-Anomaly detection via modularity-based community detection
+Anomaly detection as modularity-based community detection
