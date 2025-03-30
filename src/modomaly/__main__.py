@@ -7,7 +7,8 @@ import pandas as pd
 
 
 TEST_DATA_LOCATION=os.path.join("data")
-TEST_FILENAME="lidar_5.csv"
+TEST_FILENAME="lidar_5.csv" # each file is one excerpt containing an overtake
+
 # Configure the root logger
 logging.basicConfig(
         filename="main.log",
