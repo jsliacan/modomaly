@@ -46,7 +46,6 @@ def graphify(df, xgap=0.4, ygap=40.0, epsilon=1.0):
 
     # a reasonable xgap for OTs is 20 lines at 50Hz, so pass xgap=0.4. 
     x = list(df['unix_time'])
-    print(x)
     y = list(df['values'])
     n = len(x)
 
