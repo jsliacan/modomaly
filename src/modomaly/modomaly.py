@@ -9,19 +9,22 @@ options.
 """
 
 __all__ = [
-        'graphify',
-        'partition'
+        'make_graph',
+        'get_partition'
         # 'refine_parts'
         ]
 
 import logging
+import os 
 
 import networkx as nx 
+import numpy as np
 import pandas as pd 
+import matplotlib.pyplot as plt
 
 modlog = logging.getLogger(__name__)
 
-def graphify(df, xgap=0.4, ygap=40.0, epsilon=1.0):
+def make_graph(df, xgap=0.4, ygap=40.0, epsilon=1.0):
     """
     Return a networx Graph instance based on the time series in the dataframe.
 
@@ -47,36 +50,59 @@ def graphify(df, xgap=0.4, ygap=40.0, epsilon=1.0):
     # a reasonable xgap for OTs is 20 lines at 50Hz, so pass xgap=0.4. 
     x = list(df['unix_time'])
     y = list(df['values'])
+    print([i for i in range(len(y)) if y[i] < 400])
     n = len(x)
 
     edges = [(i,j) for i in range(n-1) for j in range(i+1, n)]
 
     modlog.info("Constructing graph G")
     G = nx.Graph()
-    G.add_nodes_from(range(n))
+    pos = {}
+    for i in range(n):
+        pos[i] = (i, y[i])
+    G.add_nodes_from(pos.keys())
     
+    x0 = x[0]
+
     for i in range(n-1):
         for j in range(i+1,n):
             # weigh edge 1 if:
             # nodes apart no more than ygap 
+            
+            w = (100/np.linalg.norm(np.array([x[i], y[i]]) - np.array([x[j], y[j]]), 2)**1.5)
+            # print(w, flush=True)
+
             if abs(y[i]-y[j]) < ygap:
                 # nodes apart no more than xgap
                 if abs(x[j]-x[i]) < xgap: 
-                    w = 1
+                    # w = 1
+                    pass
                 # or node j is close to at least one neighbor x of i
                 elif len([v for v in G.neighbors(i) if x[j]-x[v] < epsilon*xgap]) > 0:
-                    w = 1   # weigh edge 1
+                    # w = 1   # weigh edge 1
+                    pass
                 else:
-                    w = 0   # weigh edge 0 
+                    # w = 0   # weigh edge 0 
+                    pass
             else:
-                w = 0
+                # w = 0
+                pass
             if w > 0:
-                G.add_edge(i,j)
+                G.add_edge(i,j, weight=w, resolution=0.1)
+   
+    # for e in G.edges(data=True):
+    #     if 57 in e:
+    #         print(e)
+
+    # nx.draw(G, pos)
+    # labels = nx.get_edge_attributes(G,'weight')
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=labels)
+    # plt.savefig(os.path.join("out", "weighted-edges", "G-edges-1.png"))
     
     modlog.info("Done constructing graph G")
     return G
 
-def partition(G, alg="louvain"):
+def get_partition(G, alg="louvain"):
     """
     Return a 2-tuple containing the list of communities and the modularity
     score.
@@ -110,7 +136,7 @@ def partition(G, alg="louvain"):
     else:
         if alg == "louvain":
             modlog.info("Partitioning G")
-            communities = nx.community.louvain_communities(G)
+            communities = nx.community.louvain_communities(G, weight='weight')
             modularity = nx.community.modularity(G, communities)
             modlog.info("Done partitioning G")
         else:

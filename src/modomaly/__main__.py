@@ -3,8 +3,9 @@ import os
 import modomaly 
 import datetime 
 
-import pandas as pd 
 import matplotlib.pyplot as plt
+import networkx as nx
+import pandas as pd 
 
 from statistics import mean
 
@@ -21,7 +22,7 @@ logging.basicConfig(
 )
 logger.info("'Main' started")
 
-for k in range(15):
+for k in range(1):
     
     TEST_FILENAME="lidar_"+str(k)+".csv" # each file is one excerpt containing an overtake
     COLOR=['tab:blue', 'tab:orange', 'tab:green', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
@@ -35,10 +36,17 @@ for k in range(15):
     df['datetime'] = pd.to_datetime(df['datetimestr'], format='%Y-%m-%d %H:%M:%S.%f')
     df['unix_time'] = df['datetime'].apply(lambda x: datetime.datetime.timestamp(x))
 
-    # Call module functions
-    G = modomaly.graphify(df)
-    P, m = modomaly.partition(G)
-
+    # Call modularity based module functions
+    G = modomaly.make_graph(df)
+    P, m = modomaly.get_partition(G)
+    
+    # Try spectral method
+    # so = nx.spectral_ordering(G)
+    # fv = nx.fiedler_vector(G) # eigenvector corresponding to the 2nd smallest evalue (for L = D - A, that's the first non-zero evalue)
+    cc = list(nx.connected_components(G))
+    # eL = nx.laplacian_spectrum(G)
+    print(len(cc))
+    
     # ---------------------------------- OUTPUT ------------------------------------
     logger.info("{}: Plotting figures".format(k))
     partition_info = []
@@ -68,20 +76,19 @@ for k in range(15):
         if n > max_len:
             max_len = n
             max_i = i
+
     for i, p in enumerate(partition_info):
         c = 'tab:blue'
         if i == max_i:
             c = 'tab:orange'
         plt.scatter(p['times'], p['values'], color=c)
-    plt.savefig(os.path.join("out", "lidar_bi-color-"+str(k)+".png"))
+    plt.savefig(os.path.join("out", "weighted-edges", "lidar_bi-color-"+str(k)+".png"))
     plt.clf()
-
-            
 
     for i, p in enumerate(partition_info):
         c = COLOR[i%len(COLOR)]
         plt.scatter(p['times'], p['values'], color=c)
-    plt.savefig(os.path.join("out", "lidar_"+str(k)+".png"))
+    plt.savefig(os.path.join("out", "weighted-edges", "lidar_"+str(k)+".png"))
     plt.clf()
 
 logger.info("'Main' finished")
